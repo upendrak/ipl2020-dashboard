@@ -121,7 +121,7 @@ leaflet(map) %>%
   )
 ```
 
-IPL stats {data-icon="ion-stats-bars"}
+IPL squad {data-icon="ion-stats-bars"}
 =======================================================================
 
 Row {data-height=650}
@@ -153,5 +153,3 @@ squads %>% count(Player_ipl_team, sort = TRUE) %>% mutate(Player_ipl_team = fct_
 ```{r}
 squads %>% count(Player_country, sort = TRUE) %>% mutate(Player_country = fct_reorder(Player_country, n)) %>% ggplot(aes(n, Player_country, fill = Player_country)) + geom_col() + theme_light() + labs(x = "Number of Players", y = "IPL team") + theme(legend.position = "")
 ```
-
-
