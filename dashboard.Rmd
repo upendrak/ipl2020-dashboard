@@ -1,0 +1,53 @@
+---
+title: "IPL 2020 Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: fill
+    theme: paper
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+suppressMessages(library('flexdashboard', warn.conflict = FALSE, quietly = TRUE))
+suppressMessages(library('ggplot2', warn.conflict = FALSE, quietly = TRUE))
+suppressMessages(library('tidyverse', warn.conflict = FALSE, quietly = TRUE))
+```
+
+```{r}
+# IPL 2020 squads
+data <- read_csv("data/Squads_IPL_2020.csv")
+```
+
+Home {data-icon="fa-table"}
+=======================================================================
+
+Row
+-------------------------------------
+
+### Total Countries
+
+```{r}
+# Total number of countries representing in IPL
+countries <- data %>% count(Player_country) %>% count()
+valueBox(countries, icon="fa-globe")
+```
+
+### Total Players
+
+```{r}
+# Total number of players representing in IPL
+players <- data %>% count()
+valueBox(players, icon="fa-running")
+```
+
+
+### Total Indian Players 
+
+```{r}
+# Total number of countries representing in IPL
+indian_players <- data %>% filter(Player_country == "India") %>% count()
+valueBox(indian_players, icon="fa-rupee-sign")
+```
+
+
