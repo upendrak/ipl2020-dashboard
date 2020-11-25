@@ -5,6 +5,9 @@ output:
     orientation: rows
     vertical_layout: fill
     theme: paper
+    logo: ./images/ipl-logo.jpg
+    source_code: embed
+    social: ["twitter"]
 runtime: shiny
 ---
 
@@ -15,18 +18,20 @@ suppressMessages(library('tidyverse', warn.conflict = FALSE, quietly = TRUE))
 suppressMessages(library('rnaturalearth', warn.conflict = FALSE, quietly = TRUE))
 suppressMessages(library('sp', warn.conflict = FALSE, quietly = TRUE))
 suppressMessages(library('leaflet', warn.conflict = FALSE, quietly = TRUE))
+suppressMessages(library('plotly', warn.conflict = FALSE, quietly = TRUE))
 ```
 
 ```{r}
 # IPL 2020 squads
 data <- read_csv("data/Squads_IPL_2020.csv")
+matches <- read_csv("data/Matches_IPL_2020.csv")
 ```
 
 Home {data-icon="fa-table"}
 =======================================================================
 
 Row
--------------------------------------
+-----------------------------------------------------------------------
 
 ### Total Teams
 
@@ -60,8 +65,16 @@ players <- data %>% count()
 valueBox(players, icon="fas fa-running")
 ```
 
-Row 
-------------------------------------
+### Total Matches
+
+```{r}
+# Total number of players representing in IPL
+total_matches <- matches %>% count()
+valueBox(total_matches, icon="fa-border-all")
+```
+
+Row
+-----------------------------------------------------------------------
 
 ### Countries representing in IPL:
 
@@ -107,4 +120,38 @@ leaflet(map) %>%
     opacity = 0.7, title = "Players"
   )
 ```
+
+IPL stats {data-icon="ion-stats-bars"}
+=======================================================================
+
+Row {data-height=650}
+-------------------------------------
+
+### Chart 1
+
+```{r}
+squads <- read_csv("data/Squads_IPL_2020.csv")
+country_team <- squads %>% count(Player_country, Player_ipl_team, sort = TRUE) %>% 
+  mutate(Player_country = fct_reorder(Player_country, n))
+p <- ggplot(country_team, aes(n, Player_country, fill = Player_country)) + geom_col() + 
+  theme_light() + labs(x = "Number of Players", y = "IPL team") + theme(legend.position = "") + facet_wrap(~Player_ipl_team) +
+  theme(axis.text.x = element_text(size = 14), axis.text.y = element_text(size = 12))
+p
+```
+
+Row {data-height=550}
+-------------------------------------
+   
+### Chart 2
+
+```{r}
+squads %>% count(Player_ipl_team, sort = TRUE) %>% mutate(Player_ipl_team = fct_reorder(Player_ipl_team, n)) %>% ggplot(aes(n, Player_ipl_team, fill = Player_ipl_team)) + geom_col() + theme_light() + labs(x = "Number of Players", y = "IPL team") + theme(legend.position = "")
+```   
+    
+### Chart 3
+
+```{r}
+squads %>% count(Player_country, sort = TRUE) %>% mutate(Player_country = fct_reorder(Player_country, n)) %>% ggplot(aes(n, Player_country, fill = Player_country)) + geom_col() + theme_light() + labs(x = "Number of Players", y = "IPL team") + theme(legend.position = "")
+```
+
 
