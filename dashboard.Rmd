@@ -12,6 +12,9 @@ runtime: shiny
 suppressMessages(library('flexdashboard', warn.conflict = FALSE, quietly = TRUE))
 suppressMessages(library('ggplot2', warn.conflict = FALSE, quietly = TRUE))
 suppressMessages(library('tidyverse', warn.conflict = FALSE, quietly = TRUE))
+suppressMessages(library('rnaturalearth', warn.conflict = FALSE, quietly = TRUE))
+suppressMessages(library('sp', warn.conflict = FALSE, quietly = TRUE))
+suppressMessages(library('leaflet', warn.conflict = FALSE, quietly = TRUE))
 ```
 
 ```{r}
@@ -25,6 +28,14 @@ Home {data-icon="fa-table"}
 Row
 -------------------------------------
 
+### Total Teams
+
+```{r}
+# Total number of countries representing in IPL
+teams <- data %>% count(Player_ipl_team) %>% count()
+valueBox(teams, icon="fas fa-users")
+```
+
 ### Total Countries
 
 ```{r}
@@ -32,15 +43,6 @@ Row
 countries <- data %>% count(Player_country) %>% count()
 valueBox(countries, icon="fa-globe")
 ```
-
-### Total Players
-
-```{r}
-# Total number of players representing in IPL
-players <- data %>% count()
-valueBox(players, icon="fa-running")
-```
-
 
 ### Total Indian Players 
 
@@ -50,4 +52,59 @@ indian_players <- data %>% filter(Player_country == "India") %>% count()
 valueBox(indian_players, icon="fa-rupee-sign")
 ```
 
+### Total Players
+
+```{r}
+# Total number of players representing in IPL
+players <- data %>% count()
+valueBox(players, icon="fas fa-running")
+```
+
+Row 
+------------------------------------
+
+### Countries representing in IPL:
+
+```{r}
+map <- ne_countries()
+names(map)[names(map) == "iso_a3"] <- "ISO3"
+names(map)[names(map) == "name"] <- "NAME"
+
+countries <- data %>% count(Player_country) %>% pull(Player_country)
+values <- data %>% count(Player_country) %>% pull(n)
+
+d <- data.frame("iso3c" = c("AFG", "AUS", "GBR", "IND", "NPL", "NZL", "ZAF", "LKA", "JAM"), NAME = countries, value = values)
+map$players <- d[match(map$ISO3, d$iso3c), "value"]
+
+pal <- colorBin(
+  palette = "viridis", domain = map$players,
+  bins = seq(0, max(map$players, na.rm = TRUE) + 10, by = 25)
+)
+
+map$labels <- paste0(
+  "<strong> Country: </strong> ",
+  map$NAME, "<br/> ",
+  "<strong> players: </strong> ",
+  map$players, "<br/> "
+) %>%
+  lapply(htmltools::HTML)
+
+leaflet(map) %>%
+  addTiles() %>%
+  setView(lng = 50, lat = 30, zoom = 2) %>%
+  addPolygons(
+    fillColor = ~ pal(players),
+    color = "white",
+    fillOpacity = 0.7,
+    label = ~labels,
+    highlight = highlightOptions(
+      color = "black",
+      bringToFront = TRUE
+    )
+  ) %>%
+  leaflet::addLegend(
+    pal = pal, values = ~players,
+    opacity = 0.7, title = "Players"
+  )
+```
 
