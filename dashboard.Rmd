@@ -73,6 +73,13 @@ total_matches <- matches %>% count()
 valueBox(total_matches, icon="fa-border-all")
 ```
 
+### Total prize money
+
+```{r}
+# Total number of players representing in IPL
+valueBox("2.8M", icon="fas fa-dollar-sign")
+```
+
 Row
 -----------------------------------------------------------------------
 
@@ -121,35 +128,117 @@ leaflet(map) %>%
   )
 ```
 
-IPL squad {data-icon="ion-stats-bars"}
+IPL squad {data-icon="fas fa-users"}
 =======================================================================
 
 Row {data-height=650}
 -------------------------------------
 
-### Chart 1
+### IPL Squad
 
-```{r}
+```{r, fig.width=20}
 squads <- read_csv("data/Squads_IPL_2020.csv")
 country_team <- squads %>% count(Player_country, Player_ipl_team, sort = TRUE) %>% 
   mutate(Player_country = fct_reorder(Player_country, n))
-p <- ggplot(country_team, aes(n, Player_country, fill = Player_country)) + geom_col() + 
-  theme_light() + labs(x = "Number of Players", y = "IPL team") + theme(legend.position = "") + facet_wrap(~Player_ipl_team) +
-  theme(axis.text.x = element_text(size = 14), axis.text.y = element_text(size = 12))
-p
+p <- ggplot(country_team, aes(Player_country, n, fill = Player_country)) + geom_col() + 
+  theme_light() + labs(y = "", x = "") + theme(legend.position = "none") + facet_grid(~Player_ipl_team, scales = "free", space = "free") + theme(axis.text.x = element_text(size = 12, angle=45, hjust = 1, vjust = 1), axis.text.y = element_text(size = 12), strip.text.x = element_text(size = 13))
+ggplotly(p)
 ```
 
 Row {data-height=550}
 -------------------------------------
    
-### Chart 2
+### Total number of players per IPL team
 
-```{r}
-squads %>% count(Player_ipl_team, sort = TRUE) %>% mutate(Player_ipl_team = fct_reorder(Player_ipl_team, n)) %>% ggplot(aes(n, Player_ipl_team, fill = Player_ipl_team)) + geom_col() + theme_light() + labs(x = "Number of Players", y = "IPL team") + theme(legend.position = "")
+```{r, fig.width=8}
+squads %>% count(Player_ipl_team, sort = TRUE) %>% mutate(Player_ipl_team = fct_reorder(Player_ipl_team, n)) %>% ggplot(aes(n, Player_ipl_team, fill = Player_ipl_team)) + geom_col() + theme_light() + labs(x = "Number of Players", y = "IPL team") + theme(legend.position = "") + theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12), axis.title.x = element_text(size = 16), axis.title.y = element_text(size = 16))
 ```   
     
+### Total number of players per Country
+
+```{r, fig.width=8}
+squads %>% count(Player_country, sort = TRUE) %>% mutate(Player_country = fct_reorder(Player_country, n)) %>% ggplot(aes(n, Player_country, fill = Player_country)) + geom_col() + theme_light() + labs(x = "Number of Players", y = "Country") + theme(legend.position = "") + theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12), axis.title.x = element_text(size = 16), axis.title.y = element_text(size = 16))
+```
+
+IPL stats {data-icon="ion-stats-bars"}
+=======================================================================
+
+Row {data-height=550}
+-------------------------------------
+
+### Top 5 batsman per team
+
+```{r}
+deliveries <- read_csv("data/Deliveries_IPL_2020.csv")
+
+shinyApp(
+  ui = fillPage(
+    fillCol(flex = c(NA, 1),
+      inputPanel(
+        selectInput("team", "IPL Team:", choices = unique(deliveries$batting_team), selected = "MI", selectize=TRUE)
+      ),
+      plotlyOutput("readPlot", height = "100%")
+    )
+  ),
+  server = function(input, output) {
+    output$readPlot <- renderPlotly({
+            top5 <- deliveries %>% filter(batting_team == input$team) %>% group_by(batsman) %>% summarize(n()) %>% arrange(desc(`n()`)) %>% head(5) %>% rename(runs = 2) %>%  mutate(batsman = fct_reorder(batsman, runs))
+            p <- ggplot(top5, aes(runs, batsman, fill = batsman)) +
+              geom_col(position = "dodge") +  theme_minimal() + labs(y = "", x = "Runs") + theme(legend.position = "none") +
+              theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12))
+            ggplotly(p)
+    })
+  },
+  options = list(height = 500)
+)
+```
+
+### Top 5 bowlers per IPL Team
+
+```{r}
+shinyApp(
+  ui = fillPage(
+    fillCol(flex = c(NA, 1),
+      inputPanel(
+        selectInput("team", "IPL Team:", choices = unique(deliveries$bowling_team), selected = "MI", selectize=TRUE)
+      ),
+      plotlyOutput("readPlot", height = "100%")
+    )
+  ),
+  server = function(input, output) {
+    output$readPlot <- renderPlotly({
+            top5 <- deliveries %>% filter(!is.na(player_dismissed)) %>% group_by(bowling_team, bowler) %>% summarize(n()) %>% arrange(desc(`n()`)) %>% filter(bowling_team == input$team) %>% head(5) %>% rename(wickets = 3) %>%  mutate(bowler = fct_reorder(bowler, wickets))
+            p <- ggplot(top5, aes(wickets, bowler, fill = bowler)) +
+              geom_col(position = "dodge") +  theme_minimal() + labs(y = "", x = "Wickets") + theme(legend.position = "none") +
+              theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12))
+            ggplotly(p)
+    })
+  },
+  options = list(height = 500)
+)
+```
+
 ### Chart 3
 
 ```{r}
-squads %>% count(Player_country, sort = TRUE) %>% mutate(Player_country = fct_reorder(Player_country, n)) %>% ggplot(aes(n, Player_country, fill = Player_country)) + geom_col() + theme_light() + labs(x = "Number of Players", y = "IPL team") + theme(legend.position = "")
+
+```
+
+Row {data-height=550}
+-------------------------------------
+   
+### Chart 4
+
+```{r}
+```   
+    
+### Chart 5
+
+```{r}
+```
+
+### Chart 6
+
+```{r}
+
 ```
