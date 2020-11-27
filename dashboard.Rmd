@@ -166,11 +166,37 @@ IPL stats {data-icon="ion-stats-bars"}
 Row {data-height=550}
 -------------------------------------
 
-### Top 5 batsman per team
+### Top batsman overall
 
 ```{r}
 deliveries <- read_csv("data/Deliveries_IPL_2020.csv")
+max_bastman <- deliveries %>% group_by(batsman) %>% summarize(n()) %>% arrange(desc(`n()`)) %>% rename(runs = 2) %>%  mutate(batsman = fct_reorder(batsman, runs)) %>% count() %>% pull()
 
+shinyApp(
+  ui = fillPage(
+    fillCol(flex = c(NA, 1),
+      inputPanel(
+        sliderInput("players", "Number of Players:", min = 1, max = max_bastman, value = 5, step = 1)
+      ),
+      plotlyOutput("readPlot", height = "100%")
+    )
+  ),
+  server = function(input, output) {
+    output$readPlot <- renderPlotly({
+            top <- deliveries %>% group_by(batsman) %>% summarize(n()) %>% arrange(desc(`n()`)) %>% head(input$players) %>% rename(runs = 2) %>% mutate(batsman = fct_reorder(batsman, runs))
+            p <- ggplot(top, aes(runs, batsman, fill = batsman)) +
+              geom_col(position = "dodge") +  theme_minimal() + labs(y = "", x = "Wickets") + theme(legend.position = "none") +
+              theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12))
+            ggplotly(p)
+    })
+  },
+  options = list(height = 500)
+)
+```   
+
+### Top 5 batsman per team
+
+```{r}
 shinyApp(
   ui = fillPage(
     fillCol(flex = c(NA, 1),
@@ -185,6 +211,63 @@ shinyApp(
             top5 <- deliveries %>% filter(batting_team == input$team) %>% group_by(batsman) %>% summarize(n()) %>% arrange(desc(`n()`)) %>% head(5) %>% rename(runs = 2) %>%  mutate(batsman = fct_reorder(batsman, runs))
             p <- ggplot(top5, aes(runs, batsman, fill = batsman)) +
               geom_col(position = "dodge") +  theme_minimal() + labs(y = "", x = "Runs") + theme(legend.position = "none") +
+              theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12))
+            ggplotly(p)
+    })
+  },
+  options = list(height = 500)
+)
+```
+
+### Players with most number of Fours
+
+```{r}
+max_bastman <- deliveries %>% group_by(batsman, batsman_runs) %>% summarize(n()) %>% filter(batsman_runs == 4) %>% arrange(desc(`n()`)) %>% nrow()
+
+shinyApp(
+  ui = fillPage(
+    fillCol(flex = c(NA, 1),
+      inputPanel(
+        sliderInput("players", "Number of Players:", min = 1, max = max_bastman, value = 5, step = 1)
+      ),
+      plotlyOutput("readPlot", height = "100%")
+    )
+  ),
+  server = function(input, output) {
+    output$readPlot <- renderPlotly({
+            top <- deliveries %>% group_by(batsman, batsman_runs) %>% summarize(n()) %>% filter(batsman_runs == 4) %>% arrange(desc(`n()`)) %>% head(input$players) %>% rename(fours = 3) %>% mutate(batsman = fct_reorder(batsman, fours))
+            p <- ggplot(top, aes(fours, batsman, fill = batsman)) +
+              geom_col(position = "dodge") +  theme_minimal() + labs(y = "", x = "Fours") + theme(legend.position = "none") +
+              theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12))
+            ggplotly(p)
+    })
+  },
+  options = list(height = 500)
+)
+```   
+
+Row {data-height=550}
+-------------------------------------
+
+### Top bowlers overall
+
+```{r}
+max_wicket <- deliveries %>% filter(!is.na(player_dismissed)) %>% group_by(bowler) %>% summarize(n()) %>% arrange(desc(`n()`)) %>% count() %>% pull()
+
+shinyApp(
+  ui = fillPage(
+    fillCol(flex = c(NA, 1),
+      inputPanel(
+        sliderInput("players", "Number of Players:", min = 1, max = max_wicket, value = 5, step = 1)
+      ),
+      plotlyOutput("readPlot", height = "100%")
+    )
+  ),
+  server = function(input, output) {
+    output$readPlot <- renderPlotly({
+            top <- deliveries %>% filter(!is.na(player_dismissed)) %>% group_by(bowler) %>% summarize(n()) %>% arrange(desc(`n()`)) %>% rename(wickets = 2) %>% head(input$players) %>% mutate(bowler = fct_reorder(bowler, wickets))
+            p <- ggplot(top, aes(wickets, bowler, fill = bowler)) +
+              geom_col(position = "dodge") +  theme_minimal() + labs(y = "", x = "Wickets") + theme(legend.position = "none") +
               theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12))
             ggplotly(p)
     })
@@ -218,27 +301,28 @@ shinyApp(
 )
 ```
 
-### Chart 3
+### Top dismissals
 
 ```{r}
-
-```
-
-Row {data-height=550}
--------------------------------------
-   
-### Chart 4
-
-```{r}
-```   
-    
-### Chart 5
-
-```{r}
-```
-
-### Chart 6
-
-```{r}
+shinyApp(
+  ui = fillPage(
+    fillCol(flex = c(NA, 1),
+      inputPanel(
+        selectInput("dismissal", "Type of dismissal:", choices = deliveries %>% distinct(dismissal_kind) %>% filter(!(is.na(dismissal_kind))) %>% pull(), selected = "bowled", selectize=TRUE)
+      ),
+      plotlyOutput("readPlot", height = "100%")
+    )
+  ),
+  server = function(input, output) {
+    output$readPlot <- renderPlotly({
+            top5 <- deliveries %>% filter(!is.na(player_dismissed)) %>% group_by(bowler, dismissal_kind) %>% summarize(n()) %>% arrange(desc(`n()`)) %>% filter(dismissal_kind == input$dismissal) %>% rename(times = 3) %>% mutate(bowler = fct_reorder(bowler, times)) %>% head(5)
+            p <- ggplot(top5, aes(times, bowler, fill = bowler)) +
+              geom_col(position = "dodge") +  theme_minimal() + labs(y = "", x = "Times") + theme(legend.position = "none") +
+              theme(axis.text.x = element_text(size = 12), axis.text.y = element_text(size = 12))
+            ggplotly(p)
+    })
+  },
+  options = list(height = 500)
+)
 
 ```
